@@ -1,0 +1,4 @@
+repository:
+  name: "pulla"
+  description: "Backup personal GitHub and starred repositories to the local file system."
+  topics: "github, backup"
