@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/google/go-github/v48/github"
 	"github.com/rwxd/pulla/utils"
@@ -43,6 +44,7 @@ func main() {
 			backup(*tokenFlag, *destinationFlag)
 			fmt.Println("Backup finished")
 			fmt.Printf("Sleeping for %d hours\n", *daemonIntervalFlag)
+			time.Sleep(time.Duration(*daemonIntervalFlag) * time.Hour)
 		}
 	} else {
 		backup(*tokenFlag, *destinationFlag)
