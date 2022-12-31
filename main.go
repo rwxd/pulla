@@ -12,11 +12,16 @@ import (
 	"golang.org/x/oauth2"
 )
 
+var (
+	userFlag           = flag.String("user", "", "User to backup")
+	tokenFlag          = flag.String("token", "", "User token")
+	destinationFlag    = flag.String("dest", "", "Destination directory")
+	workerFlag         = flag.Int("worker", 10, "Number of concurrent pulls")
+	daemonFlag         = flag.Bool("daemon", false, "Run as daemon")
+	daemonIntervalFlag = flag.Int("interval", 12, "Interval in hours")
+)
+
 func main() {
-	userFlag := flag.String("user", "", "User to backup")
-	tokenFlag := flag.String("token", "", "User token")
-	destinationFlag := flag.String("dest", "", "Destination directory")
-	workerFlag := flag.Int("worker", 10, "Number of concurrent pulls")
 	flag.Parse()
 
 	if len(*destinationFlag) == 0 {
@@ -31,8 +36,22 @@ func main() {
 		os.Exit(1)
 	}
 
+	if *daemonFlag {
+		fmt.Printf("Running as daemon with interval of %d hours\n", *daemonIntervalFlag)
+		for {
+			fmt.Println("Starting backup")
+			backup(*tokenFlag, *destinationFlag)
+			fmt.Println("Backup finished")
+			fmt.Printf("Sleeping for %d hours\n", *daemonIntervalFlag)
+		}
+	} else {
+		backup(*tokenFlag, *destinationFlag)
+	}
+}
+
+func backup(token string, destination string) {
 	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: *tokenFlag})
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
 
@@ -54,7 +73,7 @@ func main() {
 		userRepos = append(userRepos, repo.Repository)
 	}
 
-	HandleRepositories(*tokenFlag, *destinationFlag, userRepos, *workerFlag)
+	HandleRepositories(token, destination, userRepos, *workerFlag)
 }
 
 func HandleRepositories(token string, destPath string, repos []*github.Repository, worker int) {
