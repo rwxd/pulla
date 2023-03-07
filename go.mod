@@ -3,7 +3,7 @@ module github.com/rwxd/pulla
 go 1.18
 
 require (
-	github.com/google/go-github/v48 v48.1.0
+	github.com/google/go-github/v48 v48.2.0
 	golang.org/x/oauth2 v0.2.0
 )
 
