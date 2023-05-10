@@ -6,7 +6,7 @@ WORKDIR /build
 RUN CGO_ENABLED=0 GOOS=linux go build -a -o pulla .
 
 # generate clean, final image for end users
-FROM alpine:3.17.2
+FROM alpine:3.18.0
 
 RUN apk add --no-cache ca-certificates git
 
