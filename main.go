@@ -17,7 +17,7 @@ var (
 	userFlag           = flag.String("user", "", "User to backup")
 	tokenFlag          = flag.String("token", "", "User token")
 	destinationFlag    = flag.String("dest", "", "Destination directory")
-	workerFlag         = flag.Int("worker", 10, "Number of concurrent pulls")
+	workerFlag         = flag.Int("worker", 5, "Number of concurrent pulls")
 	daemonFlag         = flag.Bool("daemon", false, "Run as daemon")
 	daemonIntervalFlag = flag.Int("interval", 12, "Interval in hours")
 )
@@ -51,6 +51,7 @@ func main() {
 	}
 }
 
+// Starts the backup
 func backup(token string, destination string) {
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
@@ -75,10 +76,11 @@ func backup(token string, destination string) {
 		userRepos = append(userRepos, repo.Repository)
 	}
 
-	HandleRepositories(token, destination, userRepos, *workerFlag)
+	handleRepositories(token, destination, userRepos, *workerFlag)
 }
 
-func HandleRepositories(token string, destPath string, repos []*github.Repository, worker int) {
+// Clones or updates multiple repositories to the given path
+func handleRepositories(token string, destPath string, repos []*github.Repository, worker int) {
 	var wg sync.WaitGroup
 	guard := make(chan int, worker)
 
@@ -98,7 +100,7 @@ func HandleRepositories(token string, destPath string, repos []*github.Repositor
 					fmt.Println(err)
 				}
 
-				err = utils.UpdateRepo(clonePath)
+				err = utils.UpdateRepo(clonePath, false)
 				if err != nil {
 					fmt.Println(err)
 				}
