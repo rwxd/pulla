@@ -7,9 +7,26 @@ on:
       - "v*.*.*"
 
 jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: pre-commit/action@v3.0.1
+        env:
+          SKIP: "no-commit-to-branch"
   container:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags') || github.ref == 'main')
+    needs:
+      - pre-commit
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
@@ -33,14 +50,14 @@ jobs:
             type=sha
 
       - name: Log in to Docker Hub
-        if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags') || github.ref == 'main')
+        if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags') || github.ref == 'refs/heads/main')
         uses: docker/login-action@d398f07826957cd0a18ea1b059cf1207835e60bc
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Login to GHCR
-        if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags') || github.ref == 'main')
+        if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags') || github.ref == 'refs/heads/main')
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
@@ -54,3 +71,50 @@ jobs:
           push: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/tags') || github.ref == 'main') }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  semantic-release:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs:
+      - pre-commit
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - id: generate_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CICD_APP_ID }}
+          private-key: ${{ secrets.CICD_APP_PRIVATE_KEY }}
+
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v3
+        env:
+          GITHUB_TOKEN: "${{ steps.generate_token.outputs.token }}"
+
+  release-binary:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    needs:
+      - pre-commit
+    steps:
+      -  uses: actions/checkout@v4
+
+      - id: generate_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CICD_APP_ID }}
+          private-key: ${{ secrets.CICD_APP_PRIVATE_KEY }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - uses: goreleaser/goreleaser-action@v5
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: "${{ steps.generate_token.outputs.token }}"
