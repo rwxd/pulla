@@ -77,6 +77,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs:
       - pre-commit
+      - container
     steps:
       - uses: actions/checkout@v4
         with:
@@ -99,8 +100,7 @@ jobs:
     needs:
       - pre-commit
     steps:
-      -  uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - id: generate_token
         uses: actions/create-github-app-token@v1
         with:
