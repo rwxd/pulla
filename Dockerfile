@@ -1,4 +1,4 @@
-FROM docker.io/golang:1.22-alpine as builder
+FROM docker.io/golang:1.23-alpine as builder
 
 COPY . /build
 WORKDIR /build
@@ -6,7 +6,7 @@ WORKDIR /build
 RUN CGO_ENABLED=0 GOOS=linux go build -a -o pulla .
 
 # generate clean, final image for end users
-FROM alpine:3.20.2
+FROM alpine:3.20.3
 
 RUN apk add --no-cache ca-certificates git
 
